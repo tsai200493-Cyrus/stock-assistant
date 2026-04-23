@@ -1,0 +1,27 @@
+name: 每日台股分析
+
+on:
+  schedule:
+    - cron: '30 0 * * 1-5'  # 台灣時間 08:30，週一至週五
+  workflow_dispatch:          # 允許手動觸發
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安裝套件
+        run: pip install -r requirements.txt
+
+      - name: 執行分析
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          LINE_GROUP_ID: ${{ secrets.LINE_GROUP_ID }}
+        run: python main.py

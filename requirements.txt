@@ -1,0 +1,7 @@
+yfinance>=0.2.40
+pandas>=2.0.0
+ta>=0.11.0
+google-generativeai>=0.8.0
+requests>=2.31.0
+feedparser>=6.0.11
+apscheduler>=3.10.4
