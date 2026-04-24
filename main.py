@@ -7,6 +7,8 @@ from pathlib import Path
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
+import requests
+
 from src.fetcher import fetch_stock_data
 from src.technical import analyze_technical
 from src.news import fetch_stock_news
@@ -24,7 +26,6 @@ def load_config() -> dict:
             "line_channel_access_token": os.environ["LINE_CHANNEL_ACCESS_TOKEN"],
             "line_user_id": os.environ["LINE_USER_ID"],
             "line_group_id": os.environ.get("LINE_GROUP_ID", ""),
-            "schedule_time": "08:30",
         }
     with open(BASE / "config.json", encoding="utf-8") as f:
         return json.load(f)
@@ -33,6 +34,33 @@ def load_config() -> dict:
 def load_stocks() -> list[dict]:
     with open(BASE / "stocks.json", encoding="utf-8") as f:
         return json.load(f)["stocks"]
+
+
+def is_trading_day() -> bool:
+    today = datetime.now().strftime("%Y%m%d")
+    url = f"https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date={today}&stockNo=2330"
+    try:
+        res = requests.get(url, timeout=10)
+        return res.json().get("stat") == "OK"
+    except Exception:
+        return True  # 查不到時預設繼續執行
+
+
+def validate_line_token(config: dict) -> bool:
+    token = config["line_channel_access_token"]
+    try:
+        res = requests.get(
+            "https://api.line.me/v2/bot/info",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+        if res.status_code == 200:
+            return True
+        print(f"LINE Token 驗證失敗 {res.status_code}: {res.text}")
+        return False
+    except Exception as e:
+        print(f"LINE Token 驗證例外：{e}")
+        return False
 
 
 def build_stock_report(stock: dict, config: dict) -> str:
@@ -71,8 +99,16 @@ def send_to_all(config: dict, message: str):
 
 def run_analysis(dry_run: bool = False):
     config = load_config()
-    stocks = load_stocks()
 
+    if not dry_run:
+        if not is_trading_day():
+            print("今日非交易日，跳過分析。")
+            return
+        if not validate_line_token(config):
+            print("LINE Token 無效，中止執行。")
+            sys.exit(1)
+
+    stocks = load_stocks()
     date_str = datetime.now().strftime("%Y/%m/%d")
     print(f"[{datetime.now().strftime('%H:%M:%S')}] 開始分析 {len(stocks)} 檔股票...")
 
