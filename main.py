@@ -37,10 +37,19 @@ def load_stocks() -> list[dict]:
 
 
 def is_trading_day() -> bool:
-    import exchange_calendars as ecals
     from datetime import date
-    cal = ecals.get_calendar("XTAI")
-    return cal.is_session(date.today())
+    today = date.today()
+    if today.weekday() >= 5:
+        return False
+    url = "https://www.twse.com.tw/holidaySchedule/holidaySchedule?response=json"
+    try:
+        res = requests.get(url, timeout=10)
+        data = res.json()
+        today_str = today.strftime("%Y/%m/%d")
+        non_trading = {row[0] for row in data.get("data", [])}
+        return today_str not in non_trading
+    except Exception:
+        return True
 
 
 def validate_line_token(config: dict) -> bool:
