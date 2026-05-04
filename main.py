@@ -39,23 +39,16 @@ def load_stocks() -> list[dict]:
 def is_trading_day() -> bool:
     from datetime import date
     today = date.today()
-    print(f"[DEBUG] 今日日期: {today}, weekday: {today.weekday()}")
     if today.weekday() >= 5:
         return False
     url = "https://www.twse.com.tw/holidaySchedule/holidaySchedule?response=json"
     try:
         res = requests.get(url, timeout=10)
         data = res.json()
-        print(f"[DEBUG] API stat: {data.get('stat')}, 筆數: {len(data.get('data', []))}")
-        if data.get("data"):
-            print(f"[DEBUG] 第一筆日期格式: {data['data'][0][0]}")
-        today_str = today.strftime("%Y/%m/%d")
+        today_str = today.strftime("%Y-%m-%d")
         non_trading = {row[0] for row in data.get("data", [])}
-        result = today_str not in non_trading
-        print(f"[DEBUG] today_str={today_str}, is_trading={result}")
-        return result
-    except Exception as e:
-        print(f"[DEBUG] API 例外: {e}")
+        return today_str not in non_trading
+    except Exception:
         return True
 
 
