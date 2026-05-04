@@ -37,13 +37,10 @@ def load_stocks() -> list[dict]:
 
 
 def is_trading_day() -> bool:
-    today = datetime.now().strftime("%Y%m%d")
-    url = f"https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date={today}&stockNo=2330"
-    try:
-        res = requests.get(url, timeout=10)
-        return res.json().get("stat") == "OK"
-    except Exception:
-        return True  # 查不到時預設繼續執行
+    import exchange_calendars as ecals
+    from datetime import date
+    cal = ecals.get_calendar("XTAI")
+    return cal.is_session(date.today())
 
 
 def validate_line_token(config: dict) -> bool:
