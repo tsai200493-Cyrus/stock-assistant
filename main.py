@@ -118,9 +118,7 @@ def run_analysis(dry_run: bool = False):
     date_str = datetime.now().strftime("%Y/%m/%d")
     print(f"[{datetime.now().strftime('%H:%M:%S')}] 開始分析 {len(stocks)} 檔股票...")
 
-    header_msg = f"📊 台股每日分析\n📅 {date_str}\n共追蹤 {len(stocks)} 檔"
-    if not dry_run:
-        send_to_all(config, header_msg)
+    parts = [f"📊 台股每日分析\n📅 {date_str}\n共追蹤 {len(stocks)} 檔"]
 
     for stock in stocks:
         code = stock["code"]
@@ -132,12 +130,14 @@ def run_analysis(dry_run: bool = False):
                 print(report)
                 print()
             else:
-                send_to_all(config, report)
+                parts.append(report)
         except Exception as e:
             msg = f"❗ {code} 分析失敗：{e}"
             print(f"\n  {msg}")
-            if not dry_run:
-                send_to_all(config, msg)
+            parts.append(msg)
+
+    if not dry_run:
+        send_to_all(config, "\n\n".join(parts))
 
     print("✅ 全部完成")
 
